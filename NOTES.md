@@ -163,3 +163,78 @@ function when(fn) {
   };
 }
 ```
+
+3. Function Composition
+
+Function composition can make the data flow more obvious and declearative, we can see exactly how the data flows from the start to the end, and see the path of the data flow.
+
+```js
+function sum(x, y) {
+  return x + y;
+}
+
+function mult(x, y) {
+  return x * y;
+}
+
+// (3 * 4) + 5
+var x_y = mult(3, 4); // <- intermedian variable
+sum(x_y, 5); // 17
+
+function multAndSum(x, y, z) {
+  return sum(mult(x, y), z);
+}
+
+multAndSum(3, 4, 5);
+```
+
+Extract the `pipe` pattern (a "machine" that makes "machines")
+
+```js
+function pipe2(fn1, fn2) {
+  return function pipped(arg1, arg2, arg3) {
+    return fn2(fn1(arg1, arg2), arg3);
+  };
+}
+
+var multAndSum = pipe2(mult, sum);
+```
+
+## 3.1 Compose vs Pipe
+
+- They do same thing, make one "machine" that consist of multiple small "machines"
+- The data flows from the start to the end
+- The only difference is the order of the input `function` are reversed
+
+```js
+// the execution direction is from right to left
+foo(bar(baz(2)));
+
+// right to left
+compose(
+  foo,
+  bar,
+  baz
+)(2);
+
+// left to right
+pipe(
+  baz,
+  bar,
+  foo
+)(2);
+```
+
+## 3.2 ComposeRight example
+
+```js
+function composeRight(fn2, fn1) {
+  return function comp(...args) {
+    return fn2(fn1(...args));
+  };
+}
+```
+
+- This is only an example of **hard code** function that composes two functions
+- Notice that the `comp` function and the `fn1` function can take up any number of arguments, but fn2 only takes one argument
+- In fp, we always try to use unary as much as possible, and there are tricks such as `curry` and `unary` can convert n-ary function into unary.
