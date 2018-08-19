@@ -55,3 +55,111 @@ F(5); // 53
 ```
 
 Each call should be isolated, `F(3)` should be have nothing to do with `F(5)`.
+
+# 2. Argument
+
+- Function with one argument is called **unary function**
+- Function with two arguments is called **binary function**
+- Function with three or more arguments is called **n-ary** function.
+- In fp javascript, try to use unary and binary functions as much as possible.
+
+## 2.1 some util functions
+
+make unary or binary fn
+
+```js
+// unary wrapper
+function unary(fn) {
+  return function(arg) {
+    return fn(arg);
+  };
+}
+
+// binary wrapper
+function binary(fn) {
+  return function(arg1, arg2) {
+    return fn(arg1, arg2);
+  };
+}
+```
+
+flip the arguments
+
+```js
+function flipArgs(fn) {
+  return function flipped(arg1, arg2, ...args) {
+    return fn(arg2, arg1, ...args);
+  };
+}
+```
+
+reversed all the arguments
+
+```js
+function reverseArgs(fn) {
+  return function reversed(...args) {
+    return fn(...args.reverse());
+  };
+}
+```
+
+spread all the arguments
+
+```js
+function spreadArgs(fn) {
+  return function spreaded(argArr) {
+    return fn(...argArr);
+  };
+}
+```
+
+## 2.2 Point Free Style
+
+Point-free basically means, get rid of the function mapping, directly pass it.
+
+```js
+foo(function(arg) {
+  // <- arg
+  return bar(arg); // <- arg
+  // we don't really need this mapping anymore
+});
+
+foo(bar); // point-free style
+```
+
+\*Any function that returns a true / false value is called **predicate** function.
+
+```js
+function isOdd(val) {
+  return val % 2 === 1;
+}
+
+function isEven(val) {
+  // <- point
+  return !isOdd(val); // <- point
+}
+```
+
+Not function: takes a predicate function as its input and return the opposite value of the function's return value
+
+```js
+function not(fn) {
+  return function negated(...args) {
+    return !fn(...args);
+  };
+}
+
+var isEven = not(isOdd);
+```
+
+```js
+function when(fn) {
+  return function(predicateFn) {
+    return function(...args) {
+      if (predicateFn(...args)) {
+        return fn(...args);
+      }
+    };
+  };
+}
+```
