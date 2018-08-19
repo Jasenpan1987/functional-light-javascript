@@ -238,3 +238,65 @@ function composeRight(fn2, fn1) {
 - This is only an example of **hard code** function that composes two functions
 - Notice that the `comp` function and the `fn1` function can take up any number of arguments, but fn2 only takes one argument
 - In fp, we always try to use unary as much as possible, and there are tricks such as `curry` and `unary` can convert n-ary function into unary.
+
+# 4. Immutability
+
+- The `const` keyword only gives a variable re-assignment immutability.
+
+```js
+var x = 1;
+x = 2; // allowed
+
+const x = 1;
+x = 123; // not allowed
+
+const z = [1, 2, 3];
+z[0] = 1000; // still allowed
+```
+
+- What we really care is not this re-assignment immutability, it's the value re-immutability.
+
+- If we pass the value by reference, and everyone can mutate the value, there is a big problem.
+
+- `Object.freeze` is a quick way to achieve the value immutability, but it's shallow.
+
+```js
+var x = Object.freeze([1, 2, 3, [4, 5]]);
+
+x[0] = 100; // not work
+x[3][0] = 100; // allowed
+```
+
+- If we really need a deep immutable data structure, there are libraries such as `immutablejs` and `mori` to help us do that.
+
+- When we create a function, don't mutate the input value because this will create side effects.
+
+Bad:
+
+```js
+function doubleMutable(list) {
+  for (var i = 0; i < list.length; i++) {
+    list[i] = list[i] * 2;
+  }
+}
+
+var list = [1, 2, 3];
+doubleMutable(list); // return undefined
+list; // [2, 4, 6]
+```
+
+Good:
+
+```js
+function doubleImmutable(list) {
+  var newList = [];
+  for (var i = 0; i < list.length; i++) {
+    newList[i] = list[i] * 2;
+  }
+  return newList;
+}
+
+var list = [1, 2, 3];
+doubleImmutable(list); // [2, 4, 6]
+list; // [1, 2, 3]
+```
