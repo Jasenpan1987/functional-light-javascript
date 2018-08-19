@@ -300,3 +300,89 @@ var list = [1, 2, 3];
 doubleImmutable(list); // [2, 4, 6]
 list; // [1, 2, 3]
 ```
+
+# 5. Closure and Side Effect
+
+Closure is when a function remembers the variables around it even the function is executed elsewhere.
+
+```js
+function unary(fn) {
+  return function(arg) {
+    return fn(arg);
+  };
+}
+```
+
+when calling `unary` with a function, it returns a function that remembers the `fn` and have the ability to access it.
+
+## 5.1 Lazy and Egger
+
+This code is lazy, because the addtion part only executed when we called total. This is good if we need to define multiple `foo`s and don't even know if the returned function will ever gets executed.
+
+```js
+function foo(x, y) {
+  return function total() {
+    return x + y;
+  };
+}
+```
+
+This code is egger, because the addtion part will executed when we return the `total` back. This is good if we need to call the same `total` multiple times.
+
+```js
+function foo2(x, y) {
+  var sum = x + y;
+  return function total() {
+    return sum;
+  };
+}
+```
+
+We have a way to stand in the middle, when the `total` gets called first time, it will do the addtion part, but if we call it later, it will straight return the value that it remembered.
+
+```js
+function foo3(x, y) {
+  var sum;
+  return function total() {
+    if (sum === undefined) {
+      sum = x + y;
+    }
+    return sum;
+  };
+}
+```
+
+## 5.2 Referencial Transparency
+
+This term means if we subtitute the function call with the value it produces, there should be no impact for the system. For example:
+
+```js
+var x = foo(3, 4);
+x(); // 7
+var y = 3 + x(); // is identical with y = 3 + 4
+```
+
+## 5.3 Generalized to specialized
+
+```js
+function add(x, y) {
+  return x + y;
+}
+
+function partial(fn, ...firstArgs) {
+  return function applied(...secondArgs) {
+    return fn(...firstArgs, ...secondArgs);
+  };
+}
+
+var addTo10 = partial(add, 10);
+addTo10(3); // 13
+```
+
+The `add` function is a generalized function, it doesn't remember any specific values of the input. The `addTo10` is a specialized version of `add`.
+
+Curring vs partial application:
+
+- They both specializing a generalized function.
+- Partial application take some of the arguments now and the rest of them later.
+- Curring is giving multiple level of specializations where parital application only gives two levels of specialization. It is like collection the arguments bits by bits and returns the result after it has all the arguments.
