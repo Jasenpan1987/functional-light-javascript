@@ -386,3 +386,55 @@ The `add` function is a generalized function, it doesn't remember any specific v
 - They both specializing a generalized function.
 - Partial application take some of the arguments now and the rest of them later.
 - Curring is giving multiple level of specializations where parital application only gives two levels of specialization. It is like collection the arguments bits by bits and returns the result after it has all the arguments.
+
+# 6. Recursion
+
+- Proper tail call enabled in es6, that enpowers recursion a lot.
+- Use recursion when iteration / loop.
+- More declearative than imperative.
+
+Let's say we will iterate a list of numbers and calculate the sum, one way we can implement that is using the loop
+
+```js
+function sumIter(...nums) {
+  var sum = 0;
+  for (var i = 0; i < nums.length; i++) {
+    sum += nums[i];
+  }
+
+  return sum;
+}
+
+sumIter(1, 4, 2, 5, 7, 2);
+```
+
+The alternative way by using recursion is like this:
+
+```js
+function sumRec(sum, ...nums) {
+  // base condition:
+  if (nums.length === 0) {
+    return sum;
+  }
+
+  return sumRec(...nums);
+}
+
+sumIter(1, 4, 2, 5, 7, 2);
+```
+
+A more effecient recursion:
+
+```js
+function sumRec(sum, num, ...nums) {
+  if (num === undefined) {
+    return sum;
+  }
+
+  if (nums.length === 0) {
+    return sum + num;
+  }
+
+  return sum + sumRec(num, ...nums);
+}
+```
