@@ -438,3 +438,89 @@ function sumRec(sum, num, ...nums) {
   return sum + sumRec(num, ...nums);
 }
 ```
+
+## 6.1 PTC and TCO
+
+- PTC (Proper Tail Call) is an optimised way to use call stack when dealing with recursion.
+- That's added to js since es5.
+- We need to turn on `"use strict"` to enable the PTC.
+- In PTC form, the last expression of a function must be a return call of the function, except a ternary expression.
+
+```js
+"use strict";
+function sumRecur(...nums) {
+  return rec(...nums);
+
+  function rec(sum, num, ...nums) {
+    sum += num;
+    if (nums.length === 0) {
+      return sum;
+    }
+    return rec(sum, ...nums);
+  }
+}
+```
+
+```js
+function sumRecur(sum, num, ...nums) {
+  sum += num;
+  if (nums.length === 0) {
+    return sum;
+  }
+  return sumRecur(sum, ...nums);
+}
+```
+
+This implementation has enabled PTC properly.
+
+- The only browser that supports PTC right noe is safari.
+
+## 6.2 CPS (continuation passing style)
+
+```js
+var sumRec = (function() {
+  return function(...nums) {
+    return recur(nums, x => x);
+  };
+
+  function recur([sum, ...nums], continueFn) {
+    if (nums.length === 0) {
+      return continueFn(sum);
+    }
+
+    return recur(num, function(x) {
+      return countinueFn(sum + x);
+    });
+  }
+})();
+```
+
+## 6.3 Trampolines
+
+- An ulternative way to do recursion.
+- It doesn't grow the call stack.
+- An adaptor we can add to a function.
+
+```js
+function trampoline(fn) {
+  return function trampolined(...args) {
+    var result = fn(...args);
+
+    while (typeof result === "function") {
+      return result();
+    }
+
+    return result;
+  };
+}
+
+var sumTrampolined = trampoline(function f(sum, num, ...nums) {
+  sum += num;
+  if (nums.length === 0) {
+    return sum;
+  }
+  return function() {
+    return f(sum, ...nums);
+  };
+});
+```
