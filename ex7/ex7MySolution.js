@@ -42,6 +42,20 @@ function addn1(fnArr) {
   return result;
 }
 
+function addn1b(fnArr) {
+  let fns = [...fnArr];
+  while (fns.length > 2) {
+    let [fn0, fn1, ...others] = fns;
+    fns = [
+      function() {
+        return add2(fn0, fn1);
+      },
+      ...others
+    ];
+  }
+  return add2(...fns);
+}
+
 function addn2(fnArr) {
   var result = 0;
   return rec(...fnArr);
@@ -59,20 +73,41 @@ function addn2(fnArr) {
   }
 }
 
+function addn2b([fn0, fn1, ...fns]) {
+  if (fns.length > 0) {
+    return addn2b([
+      function() {
+        return add2(fn0, fn1);
+      },
+      ...fns
+    ]);
+  }
+  return add2(fn0, fn1);
+}
+
 function addn3(fnArr) {
   return fnArr.reduce(function(total, fn) {
     return total + add2(fn, getNum(0));
   }, 0);
 }
 
+function addn3b(fns) {
+  return fns.reduce(function(composedFn, fn) {
+    return function() {
+      return add2(composedFn, fn);
+    };
+  })();
+}
 // console.log(addn3([getNum(3), getNum(5), getNum(2), getNum(4)]));
 
 // 6. Start with an array of odd and even numbers (with some duplicates), and trim it down to only have unique values.
 function removeDuplicate(arr) {
-  const obj = arr.reduce(function(prev, num) {
-    prev[num] = undefined;
+  return arr.reduce(function(prev, num) {
+    if (!prev.find(num)) {
+      return [...prev, num];
+    }
     return prev;
-  }, {});
+  }, []);
 
   return Object.keys(obj).map(Number);
 }

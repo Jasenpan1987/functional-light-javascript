@@ -592,3 +592,245 @@ function reduce(arr, fn, init) {
 
 reduce([1, 2, 3, 4], add, 0);
 ```
+
+## 7.4 Fusion
+
+```js
+const add1 = x => x + 1;
+const mul2 = x => x * 2;
+const div3 = x => x / 3;
+
+var list = [1, 2, 3, 4, 5, 6, 7];
+list
+  .map(add1)
+  .map(mul2)
+  .map(div3);
+```
+
+when we calling the list with multiple maps, it has two downsides:
+
+1. It iterate the list 3 times, and that causes performance issue.
+2. It creates intermedian variables 3 times after each operation.
+
+Instead, we can fuse the three `map`s into one since the mapper function has the same shape.
+
+```js
+list.map(
+  compose(
+    div3,
+    mul2,
+    add1
+  )
+);
+
+// what if we only have the compose2 function?
+
+list.map([div3, mul2, add1].reduce(composeRight));
+```
+
+## 7.5 Transducing
+
+```js
+const add1 = x => x + 1;
+const isOdd = x => x % 2 === 1;
+const sum = (total, x) => total + x;
+
+var list = [2, 5, 8, 9, 13, 7];
+
+list
+  .map(add1)
+  .filter(isOdd)
+  .reduce(sum);
+```
+
+This time, each operation has different function signature, so the previous fusion technique won't work.
+
+Step 1: convert map and filter to reduce
+
+```js
+function mapWithReduce(arr, mapFn) {
+  return arr.reduce((list, x) => {
+    list.push(mapFn(x));
+    return list;
+  }, []);
+}
+
+function filterWithReduce(arr, predicateFn) {
+  return arr.reduce((list, x) => {
+    if (predicateFn(x)) {
+      list.push(x);
+    }
+    return list;
+  }, []);
+}
+
+var list = [2, 5, 8, 9, 13, 7];
+list = mapWithReduce(list, add1);
+list = filterWithReduce(list, isOdd);
+list.reduce(sum);
+```
+
+Step 2: extract the mapReducer and filterReducer
+
+```js
+function mapReducer(mapFn) {
+  return function reducer(list, value) {
+    list.push(mapFn(value));
+    return list;
+  };
+}
+
+function filterReducer(predicateFn) {
+  return function reducer(list, value) {
+    if (predicateFn(value)) {
+      list.push(value);
+    }
+    return list;
+  };
+}
+
+var list = [2, 5, 8, 9, 13, 7];
+list
+  .reduce(mapReducer(add1), [])
+  .reduce(filterReducer(isOdd), [])
+  .reduce(sum);
+```
+
+So far, the first two reduce has same input and output in shape.
+
+Step 3: extract the common logic between mapReducer and filterReducer
+
+```js
+function listCombination(list, value) {
+  list.push(value);
+  return list;
+}
+
+function mapReducer(mapFn) {
+  return function reducer(list, value) {
+    return listCombination(list, mapFn(value));
+  };
+}
+
+function filterReducer(predicateFn) {
+  return function reducer(list, value) {
+    if (predicateFn(value)) {
+      return listCombination(list, value);
+    }
+    return list;
+  };
+}
+
+var list = [2, 5, 8, 9, 13, 7];
+list
+  .reduce(mapReducer(add1), [])
+  .reduce(filterReducer(isOdd), [])
+  .reduce(sum);
+```
+
+Step 4: curry the mapReducer and the filterReducer and set combination Function to a parameter.
+
+```js
+function listCombination(list, value) {
+  list.push(value);
+  return list;
+}
+
+var mapReducer = curry(function mapReducer(mapFn, combineFn) {
+  return function reducer(list, value) {
+    return combineFn(list, mapFn(value));
+  };
+});
+
+var filterReducer = curry(function filterReducer(predicateFn, combineFn) {
+  return function reducer(list, value) {
+    if (predicateFn(value)) {
+      return combineFn(list, value);
+    }
+    return list;
+  };
+});
+
+var list = [2, 5, 8, 9, 13, 7];
+list
+  .reduce(mapReducer(add1)(listCombination), [])
+  .reduce(filterReducer(isOdd)(listCombination), [])
+  .reduce(sum);
+```
+
+Step 5: Notice here, the `listCombination` can also be treated as reducer because it has the same signature of `list` and `value` and return back the `list`.
+
+```js
+function listReducer(list, value) {
+  list.push(value);
+  return list;
+}
+
+var mapReducer = curry(function mapReducer(mapFn, combineFn) {
+  return function reducer(list, value) {
+    return combineFn(list, mapFn(value));
+  };
+});
+
+var filterReducer = curry(function filterReducer(predicateFn, combineFn) {
+  return function reducer(list, value) {
+    if (predicateFn(value)) {
+      return combineFn(list, value);
+    }
+    return list;
+  };
+});
+
+var list = [2, 5, 8, 9, 13, 7];
+var transducer = compose(
+  mapReducer(add1),
+  filterReducer(isOdd)
+);
+list.reduce(transducer(listCombination), []).reduce(sum);
+```
+
+Step 6: Here we have one final goal, get rid of the `reduce(sum)`, if we think again, what is `sum`? It is, again, a reducer, it has the same shape as our `listCombination` reducer. So we can replace the `listCombination` and directly use our `sum`.
+
+```js
+...
+
+var list = [2, 5, 8, 9, 13, 7];
+var transducer = compose(
+  mapReducer(add1),
+  filterReducer(isOdd)
+);
+list.reduce(transducer(sum), 0);
+```
+
+Now, everything runs in one single iteration. In most fp libraries, we can easily find tools like `transduce`, `mapReducer`, `filterReducer` and `compose`, so that only job for us is to define the `isOdd`, `add1` functions and the `combine` function. Here is a simple implementation of transduce
+
+```js
+function transduce(transducer, combineFn, initValue, list) {
+  var reducer = transducer(combineFn);
+  return list.reduce(reducer, initValue);
+}
+
+// to use:
+var transducer = compose(
+  // covered by libraries
+  mapReducer(add1), // covered by libraries
+  mapReducer(mul2), // covered by libraries
+  filterReducer(isOdd) // covered by libraries
+);
+
+transduce(transducer, sum, 0, [1, 2, 5, 6, 1, 26, 7]);
+```
+
+So as we see, to use transduce with some fp libraries support, we only need to take care of three things:
+
+- The business logic
+- The combiner
+- The initial value to start
+
+If we want to just get back a mapped and filtered list as above rather than the total of that list, we can simply change the `sum` combiner to the `listCombination` combiner and set the initial value to `[]`.
+
+```js
+...
+
+transduce(transducer, listCombination, [], [1, 2, 5, 6, 1, 26, 7]);
+```
