@@ -381,7 +381,7 @@ addTo10(3); // 13
 
 The `add` function is a generalized function, it doesn't remember any specific values of the input. The `addTo10` is a specialized version of `add`.
 
-Curring vs partial application:
+### Curring vs partial application:
 
 - They both specializing a generalized function.
 - Partial application take some of the arguments now and the rest of them later.
@@ -523,4 +523,72 @@ var sumTrampolined = trampoline(function f(sum, num, ...nums) {
     return f(sum, ...nums);
   };
 });
+```
+
+# 7. List
+
+## 7.1 Map
+
+```js
+function doubleIt(x) {
+  return x * 2;
+}
+
+function transform(arr, fn) {
+  var newList = [];
+  for (var i = 0; i < arr.length; i++) {
+    newList[i] = fn(arr[i]);
+  }
+  return newList;
+}
+
+transform([1, 2, 3, 4], doubleIt);
+```
+
+- Map doesn't have to be applied on Array, it can applied on any data structure, what we need to do to make map work is define the transform function to fit our data structures.
+- There are a lot of `map` build-in functions, such as `toUpperCase()`. They don't look like `map` an array, but they still mapping a data structure.
+- The mapper function (doubleIt in this example) must be a pure function.
+- In map operations, each operation is independent to other operations, and this make the map better performance in a multi-thread system since each operation can be done seperately.
+
+## 7.2 filter
+
+```js
+function isOdd(num) {
+  return num % 2 === 1;
+}
+
+function filterIn(arr, fn) {
+  var newList = [];
+  for (var i = 0; i < arr.length; i++) {
+    if (fn(arr[i])) {
+      newList.push(arr[i]);
+    }
+  }
+  return newList;
+}
+
+exclude([1, 2, 3, 4, 5], isOdd);
+```
+
+## 7.3 Reduce
+
+- Reduce operates two values at a time, and combine them into on.
+- At the end of reduce, we will have one value at the end, but the value can be anything.
+- It is the most powerful function on a list, any other operation can be done by using reduce.
+- In the build-in `reduce`, for the reducer function, if the initial value is missing, the first element of the array will become the initial value.
+
+```js
+function add(prev, curr) {
+  return prev + curr;
+}
+
+function reduce(arr, fn, init) {
+  var result = init;
+  for (var i = 0; i < arr.length; i++) {
+    result = fn(result, arr[i]);
+  }
+  return result;
+}
+
+reduce([1, 2, 3, 4], add, 0);
 ```
