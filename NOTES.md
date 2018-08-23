@@ -834,3 +834,28 @@ If we want to just get back a mapped and filtered list as above rather than the 
 
 transduce(transducer, listCombination, [], [1, 2, 5, 6, 1, 26, 7]);
 ```
+
+## 7.6. Other data structure
+
+Object can also use map like this
+
+```js
+function mapObj(mapFn, obj) {
+  var keys = Object.keys(obj);
+  var newObj = {};
+  for (let key of keys) {
+    newObj[key] = mapFn(obj[key]);
+  }
+
+  return newObj;
+}
+
+var myObj = {
+  a: "foo",
+  b: "bar"
+};
+
+mapObj(x => x.upper(), myObj);
+```
+
+Actually, not only object, any data structure can adapt the concept of `map`, `reduce` and `filter`. And this make the program more functional.
